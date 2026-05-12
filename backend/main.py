@@ -9,8 +9,6 @@ import os
 
 from dotenv import load_dotenv
 
-from sentence_transformers import SentenceTransformer
-
 # =========================
 # Load ENV
 # =========================
@@ -18,14 +16,10 @@ from sentence_transformers import SentenceTransformer
 load_dotenv()
 
 # =========================
-# Load ML Models
+# Load ML Model
 # =========================
 
 model = joblib.load("xgboost_rent_model.pkl")
-
-embedding_model = SentenceTransformer(
-    "sentence-transformers/all-MiniLM-L6-v2"
-)
 
 # =========================
 # Database Connection
@@ -75,13 +69,6 @@ class Feedback(BaseModel):
     accepted: bool
     predicted_rent: float
     final_rent: float
-
-
-class ComparableRequest(BaseModel):
-    sqft: int
-    bedrooms: int
-    school_score: int
-    noise: int
 
 # =========================
 # Routes
@@ -145,21 +132,11 @@ def save_feedback(feedback: Feedback):
     }
 
 # =========================
-# Similar Properties
+# Demo Comparable Properties
 # =========================
 
 @app.post("/similar-properties")
-def similar_properties(property: ComparableRequest):
-
-    text = f"""
-    Property with
-    {property.sqft} sqft,
-    {property.bedrooms} bedrooms,
-    school score {property.school_score},
-    noise level {property.noise}
-    """
-
-    embedding = embedding_model.encode(text).tolist()
+def similar_properties(property: Property):
 
     cursor.execute(
         """
@@ -171,10 +148,10 @@ def similar_properties(property: ComparableRequest):
             noise,
             rent
         FROM properties
-        ORDER BY embedding <=> %s::vector
+        ORDER BY ABS(sqft - %s)
         LIMIT 5
         """,
-        (embedding,)
+        (property.sqft,)
     )
 
     results = cursor.fetchall()
