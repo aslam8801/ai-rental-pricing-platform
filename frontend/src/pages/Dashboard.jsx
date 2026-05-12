@@ -33,6 +33,13 @@ export default function Dashboard() {
   const [comparables, setComparables] = useState([]);
 
   // =========================
+  // Backend URL
+  // =========================
+
+  const API_BASE_URL =
+    "https://ai-rental-pricing-platform.onrender.com";
+
+  // =========================
   // Chart Data
   // =========================
 
@@ -90,7 +97,7 @@ export default function Dashboard() {
       // =========================
 
       const predictionResponse = await axios.post(
-        "http://127.0.0.1:8000/predict",
+        `${API_BASE_URL}/predict`,
         {
           sqft: Number(formData.sqft),
           bedrooms: Number(formData.bedrooms),
@@ -108,7 +115,7 @@ export default function Dashboard() {
       // =========================
 
       const comparablesResponse = await axios.post(
-        "http://127.0.0.1:8000/similar-properties",
+        `${API_BASE_URL}/similar-properties`,
         {
           sqft: Number(formData.sqft),
           bedrooms: Number(formData.bedrooms),
