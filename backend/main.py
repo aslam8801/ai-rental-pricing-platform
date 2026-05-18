@@ -39,7 +39,7 @@ cursor = conn.cursor()
 app = FastAPI()
 
 # =========================
-# CORS
+# ENABLE CORS
 # =========================
 
 app.add_middleware(
@@ -85,7 +85,7 @@ class Feedback(BaseModel):
     final_rent: float
 
 # =========================
-# HOME
+# HOME ROUTE
 # =========================
 
 @app.get("/")
@@ -104,7 +104,7 @@ def home():
 def predict(property: Property):
 
     # =========================
-    # GET COMPARABLES
+    # GET COMPARABLE PROPERTIES
     # =========================
 
     cursor.execute(
@@ -116,6 +116,7 @@ def predict(property: Property):
             locality,
 
             latitude,
+
             longitude,
 
             sqft,
@@ -130,37 +131,21 @@ def predict(property: Property):
 
             (
 
-                ABS(sqft - %s) * 0.15 +
+                ABS(sqft - %s) * 0.20 +
 
                 ABS(bedrooms - %s) * 0.20 +
 
-                ABS(metro_distance_km - %s) * 0.25 +
+                ABS(metro_distance_km - %s) * 0.30 +
 
-                ABS(hospital_distance_km - %s) * 0.15 +
+                ABS(hospital_distance_km - %s) * 0.20 +
 
-                ABS(latitude - (
-
-                    SELECT latitude
-                    FROM properties
-                    WHERE locality = %s
-                    LIMIT 1
-
-                )) * 100 * 0.15 +
-
-                ABS(longitude - (
-
-                    SELECT longitude
-                    FROM properties
-                    WHERE locality = %s
-                    LIMIT 1
-
-                )) * 100 * 0.10
+                RANDOM() * 0.10
 
             ) AS similarity_score
 
         FROM properties
 
-        WHERE locality ILIKE %s
+        WHERE locality IS NOT NULL
 
         ORDER BY similarity_score ASC
 
@@ -174,13 +159,7 @@ def predict(property: Property):
 
             property.metro_distance_km,
 
-            property.hospital_distance_km,
-
-            property.locality,
-
-            property.locality,
-
-            f"%{property.locality}%"
+            property.hospital_distance_km
         )
     )
 
@@ -246,10 +225,14 @@ def predict(property: Property):
 
         "Metro connectivity influenced accessibility scoring.",
 
-        "Hospital distance and locality affected livability ranking.",
+        "Hospital distance influenced livability scoring.",
 
-        "Location similarity heavily influenced final recommendation."
+        "Property size and bedroom count affected similarity ranking."
     ]
+
+    # =========================
+    # RESPONSE
+    # =========================
 
     return {
 
