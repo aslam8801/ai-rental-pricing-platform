@@ -60,8 +60,8 @@ app.add_middleware(
 class Property(BaseModel):
     sqft: int
     bedrooms: int
-    school_score: int
-    noise: int
+    school_score: float
+    noise: float
 
 
 class Feedback(BaseModel):
@@ -70,15 +70,18 @@ class Feedback(BaseModel):
     predicted_rent: float
     final_rent: float
 
+
 # =========================
 # Routes
 # =========================
 
 @app.get("/")
 def home():
+
     return {
-        "message": "AI Rental Prediction API 🚀"
+        "message": "AI Rental Intelligence Platform 🚀"
     }
+
 
 # =========================
 # Predict Rent
@@ -99,6 +102,7 @@ def predict(property: Property):
     return {
         "predicted_rent": round(float(prediction), 2)
     }
+
 
 # =========================
 # Save Feedback
@@ -131,8 +135,9 @@ def save_feedback(feedback: Feedback):
         "message": "Feedback saved successfully!"
     }
 
+
 # =========================
-# Demo Comparable Properties
+# REAL Comparable Retrieval
 # =========================
 
 @app.post("/similar-properties")
@@ -146,12 +151,31 @@ def similar_properties(property: Property):
             bedrooms,
             school_score,
             noise,
-            rent
+            rent,
+
+            (
+                ABS(sqft - %s) * 0.40 +
+
+                ABS(bedrooms - %s) * 0.20 +
+
+                ABS(school_score - %s) * 0.25 +
+
+                ABS(noise - %s) * 0.15
+
+            ) AS similarity_score
+
         FROM properties
-        ORDER BY ABS(sqft - %s)
+
+        ORDER BY similarity_score ASC
+
         LIMIT 5
         """,
-        (property.sqft,)
+        (
+            property.sqft,
+            property.bedrooms,
+            property.school_score,
+            property.noise
+        )
     )
 
     results = cursor.fetchall()
@@ -166,7 +190,8 @@ def similar_properties(property: Property):
             "bedrooms": row[2],
             "school_score": row[3],
             "noise": row[4],
-            "rent": row[5]
+            "rent": row[5],
+            "similarity_score": round(float(row[6]), 2)
         })
 
     return {
