@@ -10,122 +10,132 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-import {
-  MapContainer,
-  TileLayer,
-  Marker,
-  Popup,
-} from "react-leaflet";
-
-import "leaflet/dist/leaflet.css";
-
 export default function Dashboard() {
 
   const [formData, setFormData] = useState({
+
+    locality: "",
+
     sqft: "",
+
     bedrooms: "",
-    school_score: "",
-    noise: "",
+
+    metro_distance_km: "",
+
+    hospital_distance_km: "",
+
+    flood_risk: ""
+
   });
 
-  const [predictedRent, setPredictedRent] = useState(null);
+  const [predictedRent, setPredictedRent] =
+    useState(null);
 
-  const [comparables, setComparables] = useState([]);
+  const [comparables, setComparables] =
+    useState([]);
+
+  const [explanations, setExplanations] =
+    useState([]);
 
   // =========================
-  // Backend URL
+  // BACKEND URL
   // =========================
+
+  // const API_BASE_URL =
+  //   "https://ai-rental-pricing-platform.onrender.com";
 
   const API_BASE_URL =
-    "https://ai-rental-pricing-platform.onrender.com";
+  "http://127.0.0.1:8000";
 
   // =========================
-  // Chart Data
-  // =========================
-
-  const chartData = [
-    {
-      name: "Area",
-      value: Number(formData.sqft || 0),
-    },
-    {
-      name: "Schools",
-      value: Number(formData.school_score || 0),
-    },
-    {
-      name: "Noise",
-      value: Number(formData.noise || 0),
-    },
-  ];
-
-  // =========================
-  // Handle Input Change
+  // HANDLE INPUT
   // =========================
 
   const handleChange = (e) => {
 
     setFormData({
+
       ...formData,
+
       [e.target.name]: e.target.value,
     });
-
   };
 
   // =========================
-  // Predict Rent
+  // CHART DATA
+  // =========================
+
+  const chartData = [
+
+    {
+      name: "Sqft",
+      value: Number(formData.sqft || 0),
+    },
+
+    {
+      name: "Bedrooms",
+      value: Number(formData.bedrooms || 0),
+    },
+
+    {
+      name: "Metro",
+      value: Number(
+        formData.metro_distance_km || 0
+      ),
+    },
+
+    {
+      name: "Flood Risk",
+      value: Number(
+        formData.flood_risk || 0
+      ),
+    },
+  ];
+
+  // =========================
+  // PREDICT RENT
   // =========================
 
   const predictRent = async () => {
 
-    // Validation
-    if (
-      formData.sqft <= 0 ||
-      formData.bedrooms <= 0 ||
-      formData.school_score < 1 ||
-      formData.school_score > 10 ||
-      formData.noise < 1 ||
-      formData.noise > 10
-    ) {
-      alert("Please enter valid property values");
-      return;
-    }
-
     try {
 
-      // =========================
-      // Predict Rent API
-      // =========================
+      const response = await axios.post(
 
-      const predictionResponse = await axios.post(
         `${API_BASE_URL}/predict`,
+
         {
+
+          locality: formData.locality,
+
           sqft: Number(formData.sqft),
+
           bedrooms: Number(formData.bedrooms),
-          school_score: Number(formData.school_score),
-          noise: Number(formData.noise),
+
+          metro_distance_km: Number(
+            formData.metro_distance_km
+          ),
+
+          hospital_distance_km: Number(
+            formData.hospital_distance_km
+          ),
+
+          flood_risk: Number(
+            formData.flood_risk
+          )
         }
       );
 
       setPredictedRent(
-        predictionResponse.data.predicted_rent
-      );
-
-      // =========================
-      // Similar Properties API
-      // =========================
-
-      const comparablesResponse = await axios.post(
-        `${API_BASE_URL}/similar-properties`,
-        {
-          sqft: Number(formData.sqft),
-          bedrooms: Number(formData.bedrooms),
-          school_score: Number(formData.school_score),
-          noise: Number(formData.noise),
-        }
+        response.data.predicted_rent
       );
 
       setComparables(
-        comparablesResponse.data.comparables
+        response.data.comparables
+      );
+
+      setExplanations(
+        response.data.explanation
       );
 
     } catch (error) {
@@ -141,54 +151,74 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gray-100 p-8">
 
       {/* ========================= */}
-      {/* Title */}
+      {/* TITLE */}
       {/* ========================= */}
 
-      <h1 className="text-4xl font-bold mb-8 text-center">
+      <h1 className="text-5xl font-bold mb-10 text-center">
+
         AI Rental Intelligence Platform
+
       </h1>
 
       {/* ========================= */}
-      {/* Property Form */}
+      {/* PROPERTY FORM */}
       {/* ========================= */}
 
-      <div className="bg-white p-6 rounded-xl shadow-md max-w-4xl mx-auto">
+      <div className="bg-white p-8 rounded-2xl shadow-md max-w-5xl mx-auto">
 
-        <h2 className="text-2xl font-bold mb-6">
+        <h2 className="text-3xl font-bold mb-8">
+
           Property Details
+
         </h2>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-5">
+
+          <input
+            type="text"
+            name="locality"
+            placeholder="Locality / Area"
+            className="border p-4 rounded-lg"
+            onChange={handleChange}
+          />
 
           <input
             type="number"
             name="sqft"
-            placeholder="Sqft"
-            className="border p-3 rounded"
+            placeholder="Area (Sqft)"
+            className="border p-4 rounded-lg"
             onChange={handleChange}
           />
 
           <input
             type="number"
             name="bedrooms"
-            placeholder="Bedrooms"
-            className="border p-3 rounded"
+            placeholder="BHK"
+            className="border p-4 rounded-lg"
             onChange={handleChange}
           />
 
           <input
             type="number"
-            name="school_score"
-            placeholder="School Score"
-            className="border p-3 rounded"
+            name="metro_distance_km"
+            placeholder="Metro Distance (KM)"
+            className="border p-4 rounded-lg"
             onChange={handleChange}
           />
 
           <input
             type="number"
-            name="noise"
-            placeholder="Noise Level"
-            className="border p-3 rounded"
+            name="hospital_distance_km"
+            placeholder="Hospital Distance (KM)"
+            className="border p-4 rounded-lg"
+            onChange={handleChange}
+          />
+
+          <input
+            type="number"
+            name="flood_risk"
+            placeholder="Flood Risk (1-10)"
+            className="border p-4 rounded-lg"
             onChange={handleChange}
           />
 
@@ -196,85 +226,93 @@ export default function Dashboard() {
 
         <button
           onClick={predictRent}
-          className="mt-6 bg-black text-white px-6 py-3 rounded-lg"
+          className="mt-8 bg-black text-white px-8 py-4 rounded-xl"
         >
+
           Predict Rent
+
         </button>
 
       </div>
 
       {/* ========================= */}
-      {/* Prediction Card */}
+      {/* RENT OUTPUT */}
       {/* ========================= */}
 
-      {predictedRent && (
+      {
 
-        <div className="bg-white p-6 rounded-xl shadow-md mt-8 max-w-4xl mx-auto">
+        predictedRent && (
 
-          <h2 className="text-2xl font-bold">
-            Predicted Rent
-          </h2>
+          <div className="bg-white p-8 rounded-2xl shadow-md mt-10 max-w-5xl mx-auto">
 
-          <p className="text-5xl text-green-600 mt-4 font-bold">
-            ₹ {predictedRent}
-          </p>
+            <h2 className="text-3xl font-bold">
 
-        </div>
+              Estimated Market Rent
 
-      )}
+            </h2>
 
-      {/* ========================= */}
-      {/* Explanation Cards */}
-      {/* ========================= */}
+            <p className="text-6xl text-green-600 mt-6 font-bold">
 
-      <div className="grid grid-cols-3 gap-4 mt-8 max-w-4xl mx-auto">
+              ₹ {predictedRent}
 
-        <div className="bg-blue-100 p-4 rounded-lg">
+            </p>
 
-          <h3 className="font-bold text-lg">
-            Good Schools
-          </h3>
-
-          <p className="mt-2">
-            Higher school score increased pricing.
-          </p>
-
-        </div>
-
-        <div className="bg-red-100 p-4 rounded-lg">
-
-          <h3 className="font-bold text-lg">
-            Noise Impact
-          </h3>
-
-          <p className="mt-2">
-            Lower noise improved valuation.
-          </p>
-
-        </div>
-
-        <div className="bg-green-100 p-4 rounded-lg">
-
-          <h3 className="font-bold text-lg">
-            Large Area
-          </h3>
-
-          <p className="mt-2">
-            Higher sqft raised estimated rent.
-          </p>
-
-        </div>
-
-      </div>
+          </div>
+        )
+      }
 
       {/* ========================= */}
-      {/* Analytics Chart */}
+      {/* EXPLANATIONS */}
       {/* ========================= */}
 
-      <div className="bg-white p-6 rounded-xl shadow-md mt-8 max-w-4xl mx-auto">
+      {
 
-        <h2 className="text-2xl font-bold mb-6">
+        explanations.length > 0 && (
+
+          <div className="grid grid-cols-3 gap-5 mt-10 max-w-5xl mx-auto">
+
+            {
+
+              explanations.map(
+
+                (item, index) => (
+
+                  <div
+                    key={index}
+                    className="bg-blue-100 p-5 rounded-xl"
+                  >
+
+                    <h3 className="font-bold text-xl">
+
+                      Pricing Insight
+
+                    </h3>
+
+                    <p className="mt-3">
+
+                      {item}
+
+                    </p>
+
+                  </div>
+                )
+              )
+            }
+
+          </div>
+        )
+      }
+
+      {/* ========================= */}
+      {/* ANALYTICS */}
+      {/* ========================= */}
+
+      <div className="bg-white p-8 rounded-2xl shadow-md mt-10 max-w-5xl mx-auto">
+
+        <h2 className="text-3xl font-bold mb-8">
+
           Property Analytics
+
         </h2>
 
         <ResponsiveContainer width="100%" height={300}>
@@ -296,13 +334,15 @@ export default function Dashboard() {
       </div>
 
       {/* ========================= */}
-      {/* Comparable Properties */}
+      {/* COMPARABLE PROPERTIES */}
       {/* ========================= */}
 
-      <div className="bg-white p-6 rounded-xl shadow-md mt-8 max-w-4xl mx-auto">
+      <div className="bg-white p-8 rounded-2xl shadow-md mt-10 max-w-6xl mx-auto">
 
-        <h2 className="text-2xl font-bold mb-6">
-          Similar Properties
+        <h2 className="text-3xl font-bold mb-8">
+
+          Comparable Properties
+
         </h2>
 
         <table className="w-full border">
@@ -311,24 +351,28 @@ export default function Dashboard() {
 
             <tr className="bg-gray-100">
 
-              <th className="p-3 border">
+              <th className="p-4 border">
+                Locality
+              </th>
+
+              <th className="p-4 border">
+                Rent
+              </th>
+
+              <th className="p-4 border">
                 Sqft
               </th>
 
-              <th className="p-3 border">
+              <th className="p-4 border">
                 Bedrooms
               </th>
 
-              <th className="p-3 border">
-                School Score
+              <th className="p-4 border">
+                Metro Distance
               </th>
 
-              <th className="p-3 border">
-                Noise
-              </th>
-
-              <th className="p-3 border">
-                Rent
+              <th className="p-4 border">
+                Similarity
               </th>
 
             </tr>
@@ -337,72 +381,47 @@ export default function Dashboard() {
 
           <tbody>
 
-            {comparables.map((property) => (
+            {
 
-              <tr key={property.id}>
+              comparables.map((property) => (
 
-                <td className="p-3 border">
-                  {property.sqft}
-                </td>
+                <tr key={property.id}>
 
-                <td className="p-3 border">
-                  {property.bedrooms}
-                </td>
+                  <td className="p-4 border">
+                    {property.locality}
+                  </td>
 
-                <td className="p-3 border">
-                  {property.school_score}
-                </td>
+                  <td className="p-4 border">
+                    ₹ {property.rent}
+                  </td>
 
-                <td className="p-3 border">
-                  {property.noise}
-                </td>
+                  <td className="p-4 border">
+                    {property.sqft}
+                  </td>
 
-                <td className="p-3 border">
-                  ₹ {property.rent}
-                </td>
+                  <td className="p-4 border">
+                    {property.bedrooms}
+                  </td>
 
-              </tr>
+                  <td className="p-4 border">
+                    {
+                      property.metro_distance_km
+                    } km
+                  </td>
 
-            ))}
+                  <td className="p-4 border">
+                    {
+                      property.similarity_score
+                    }
+                  </td>
+
+                </tr>
+              ))
+            }
 
           </tbody>
 
         </table>
-
-      </div>
-
-      {/* ========================= */}
-      {/* Map */}
-      {/* ========================= */}
-
-      <div className="bg-white p-6 rounded-xl shadow-md mt-8 max-w-4xl mx-auto">
-
-        <h2 className="text-2xl font-bold mb-6">
-          Property Location
-        </h2>
-
-        <MapContainer
-          center={[19.0760, 72.8777]}
-          zoom={12}
-          style={{
-            height: "400px",
-            width: "100%",
-          }}
-        >
-
-          <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-
-          <Marker position={[19.0760, 72.8777]}>
-
-            <Popup>
-              Comparable Property
-            </Popup>
-
-          </Marker>
-
-        </MapContainer>
 
       </div>
 
